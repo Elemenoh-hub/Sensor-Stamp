@@ -44,8 +44,11 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // The unused half of material-icons-extended is most of the dex in an
+            // unshrunk build; R8 takes the APK from ~19 MB to a size that will
+            // actually finish downloading over mobile data.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
