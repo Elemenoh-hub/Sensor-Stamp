@@ -6,8 +6,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sensorstamp.openwifi.SensorStampApp
 import com.sensorstamp.openwifi.data.Settings
+import com.sensorstamp.openwifi.data.db.MapPoint
 import com.sensorstamp.openwifi.data.db.NetworkEntity
 import com.sensorstamp.openwifi.data.db.ScanTotals
+import com.sensorstamp.openwifi.ui.map.ColorMode
 import com.sensorstamp.openwifi.permissions.Requirement
 import com.sensorstamp.openwifi.scan.ScanState
 import com.sensorstamp.openwifi.scan.ScanStatus
@@ -58,6 +60,36 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Live grant state for every requirement that applies to this device. */
     private val _requirements = MutableStateFlow(emptyMap<Requirement, Boolean>())
     val requirements: StateFlow<Map<Requirement, Boolean>> = _requirements.asStateFlow()
+
+    // ---- Map ------------------------------------------------------------
+
+    val mapPoints: StateFlow<List<MapPoint>> = repository.observeMapPoints()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _colorMode = MutableStateFlow(ColorMode.SIGNAL)
+    val colorMode: StateFlow<ColorMode> = _colorMode.asStateFlow()
+
+    private val _hideUnusableOnMap = MutableStateFlow(false)
+    val hideUnusableOnMap: StateFlow<Boolean> = _hideUnusableOnMap.asStateFlow()
+
+    private val _selectedMapPoint = MutableStateFlow<MapPoint?>(null)
+    val selectedMapPoint: StateFlow<MapPoint?> = _selectedMapPoint.asStateFlow()
+
+    /**
+     * Last map camera position, so leaving the tab and coming back does not throw
+     * the user out to a view of the whole dataset. Held here rather than in the
+     * composable because the MapView is destroyed on tab switch.
+     */
+    var savedCamera: Triple<Double, Double, Double>? = null
+        private set
+
+    fun setColorMode(mode: ColorMode) { _colorMode.value = mode }
+    fun setHideUnusableOnMap(value: Boolean) { _hideUnusableOnMap.value = value }
+    fun selectMapPoint(point: MapPoint?) { _selectedMapPoint.value = point }
+
+    fun rememberCamera(latitude: Double, longitude: Double, zoom: Double) {
+        savedCamera = Triple(latitude, longitude, zoom)
+    }
 
     private val _toast = MutableStateFlow<String?>(null)
     val toast: StateFlow<String?> = _toast.asStateFlow()

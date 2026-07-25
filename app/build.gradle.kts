@@ -62,6 +62,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
@@ -94,6 +95,13 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.play.services.location)
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
+    // Lets the migration test execute the shipped SQL against a real SQLite
+    // engine on the JVM, without an emulator.
+    testImplementation(libs.sqlite.jdbc)
+    // android.jar stubs out org.json in JVM tests, so the migration test needs
+    // a real parser to read Room's exported schema.
+    testImplementation(libs.gson)
 }

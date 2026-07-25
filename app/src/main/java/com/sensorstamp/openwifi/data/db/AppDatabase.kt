@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [NetworkEntity::class, SightingEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,7 +23,10 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "sensorstamp.db",
-            ).build().also { instance = it }
+            )
+                .addMigrations(Migrations.MIGRATION_1_2)
+                .build()
+                .also { instance = it }
         }
     }
 }

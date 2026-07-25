@@ -7,6 +7,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Wifi
@@ -34,6 +35,7 @@ import com.sensorstamp.openwifi.ui.MainViewModel
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     COLLECT("Collect", Icons.Filled.Radar),
+    MAP("Map", Icons.Filled.Map),
     NETWORKS("Networks", Icons.Filled.Wifi),
     SETTINGS("Settings", Icons.Filled.Settings),
 }
@@ -85,6 +87,7 @@ fun HomeScreen(viewModel: MainViewModel) {
         ) { current ->
             when (current) {
                 Tab.COLLECT -> CollectScreen(viewModel)
+                Tab.MAP -> MapScreen(viewModel)
                 Tab.NETWORKS -> NetworksScreen(viewModel)
                 Tab.SETTINGS -> SettingsScreen(viewModel)
             }

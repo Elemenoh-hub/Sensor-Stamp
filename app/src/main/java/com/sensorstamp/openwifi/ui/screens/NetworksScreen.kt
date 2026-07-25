@@ -2,6 +2,7 @@ package com.sensorstamp.openwifi.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -41,6 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sensorstamp.openwifi.data.db.NetworkEntity
+import com.sensorstamp.openwifi.scan.NetworkKind
+import com.sensorstamp.openwifi.scan.RadioMath
 import com.sensorstamp.openwifi.scan.WifiSecurity
 import com.sensorstamp.openwifi.ui.MainViewModel
 import com.sensorstamp.openwifi.ui.components.Pill
@@ -191,16 +195,28 @@ fun NetworkRow(
 
             Spacer(Modifier.height(10.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Pill(
                     text = securityLabel(network.securityType),
                     container = MaterialTheme.colorScheme.secondaryContainer,
                     content = MaterialTheme.colorScheme.secondary,
                 )
+                Pill(text = kindOf(network.networkKind).label)
                 Pill(text = network.band)
                 Pill(text = "${network.bestRssi} dBm")
+                network.vendor?.let { Pill(text = it) }
                 if (network.sightingCount > 1) {
                     Pill(text = "×${network.sightingCount}")
+                }
+                if (network.isLikelyMobile) {
+                    Pill(
+                        text = "Moves",
+                        container = MaterialTheme.colorScheme.tertiaryContainer,
+                        content = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
                 }
             }
 
@@ -208,17 +224,42 @@ fun NetworkRow(
                 Column {
                     Spacer(Modifier.height(14.dp))
                     DetailRow("BSSID", network.bssid, mono = true)
+                    network.vendor?.let { DetailRow("Vendor", it) }
+                    DetailRow("Classified as", kindOf(network.networkKind).label)
                     DetailRow("Channel", "${network.channel} · ${network.frequencyMhz} MHz")
                     if (network.channelWidthMhz > 0) {
                         DetailRow("Width", "${network.channelWidthMhz} MHz")
                     }
+                    if (network.wifiStandard != 0) {
+                        DetailRow("Standard", RadioMath.wifiStandardLabel(network.wifiStandard))
+                    }
+                    if (network.supportsFtm) DetailRow("Ranging", "802.11mc capable")
+                    DetailRow("Signal range", "${network.worstRssi} to ${network.bestRssi} dBm")
+                    DetailRow(
+                        "Best fix",
+                        formatCoordinates(network.latitude, network.longitude),
+                        mono = true,
+                    )
+                    DetailRow(
+                        "Weighted estimate",
+                        formatCoordinates(network.estimatedLatitude, network.estimatedLongitude),
+                        mono = true,
+                    )
                     DetailRow("Fix accuracy", "±${network.accuracyM.toInt()} m")
+                    if (network.coverageRadiusM > 0f) {
+                        DetailRow("Heard across", RadioMath.formatMeters(network.coverageRadiusM))
+                    }
+                    DetailRow(
+                        "Est. distance at peak",
+                        RadioMath.formatMeters(network.estimatedDistanceAtBestM),
+                    )
                     if (network.altitudeM != 0.0) {
                         DetailRow("Altitude", "${network.altitudeM.toInt()} m")
                     }
                     DetailRow("Provider", network.locationProvider)
                     DetailRow("First seen", formatDateTime(network.firstSeenAt))
                     DetailRow("Last seen", formatDateTime(network.lastSeenAt))
+                    DetailRow("Sessions", network.sessionCount.toString())
                     network.venueHint?.let { DetailRow("Venue", it) }
                     DetailRow("Capabilities", network.capabilities, mono = true)
                 }
@@ -254,3 +295,6 @@ private fun DetailRow(label: String, value: String, mono: Boolean = false) {
 
 private fun securityLabel(securityType: String): String =
     runCatching { WifiSecurity.valueOf(securityType).label }.getOrDefault("Open")
+
+private fun kindOf(networkKind: String): NetworkKind =
+    runCatching { NetworkKind.valueOf(networkKind) }.getOrDefault(NetworkKind.UNKNOWN)

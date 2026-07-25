@@ -78,6 +78,13 @@ class WifiScanService : Service() {
     /** BSSIDs already written this session, so re-sightings can be counted cheaply. */
     private val seenThisSession = mutableSetOf<String>()
 
+    /**
+     * Last beacon-frame timestamp logged per BSSID. While Android throttles our
+     * scans it keeps handing back the same cached results, and without this the
+     * sightings table fills with duplicate rows that all describe one frame.
+     */
+    private val lastFrameTimestamp = mutableMapOf<String, Long>()
+
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             result.lastLocation?.let { fix ->
@@ -138,6 +145,7 @@ class WifiScanService : Service() {
 
         sessionId = System.currentTimeMillis()
         seenThisSession.clear()
+        lastFrameTimestamp.clear()
         ScanState.reset(running = true, startedAt = sessionId)
 
         startForegroundNotification()
@@ -235,6 +243,15 @@ class WifiScanService : Service() {
                 if (hidden && !settings.includeHidden) continue
 
                 val bssid = result.BSSID?.lowercase() ?: continue
+
+                // The radio stamps each beacon frame. An unchanged stamp means
+                // this is the same frame we already recorded, replayed out of the
+                // scan cache — logging it again would invent a sighting that
+                // never happened.
+                val frameTimestamp = result.timestamp
+                if (frameTimestamp > 0 && lastFrameTimestamp[bssid] == frameTimestamp) continue
+                lastFrameTimestamp[bssid] = frameTimestamp
+
                 val alreadySeenThisSession = !seenThisSession.add(bssid)
                 if (settings.onlyLogNewNetworks && alreadySeenThisSession) continue
 
@@ -248,6 +265,14 @@ class WifiScanService : Service() {
                     channel = WifiSecurity.channelFor(result.frequency),
                     band = WifiSecurity.bandFor(result.frequency),
                     channelWidthMhz = WifiSecurity.channelWidthMhz(result),
+                    centerFreq0 = result.centerFreq0,
+                    centerFreq1 = result.centerFreq1,
+                    wifiStandard = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        result.wifiStandard
+                    } else {
+                        0
+                    },
+                    supportsFtm = runCatching { result.is80211mcResponder }.getOrDefault(false),
                     isPasspoint = runCatching { result.isPasspointNetwork }.getOrDefault(false),
                     isHidden = hidden,
                     venueHint = result.operatorFriendlyName?.toString()?.takeIf { it.isNotBlank() },
@@ -259,6 +284,7 @@ class WifiScanService : Service() {
                     bearingDeg = if (fix.hasBearing()) fix.bearing else 0f,
                     locationProvider = fix.provider ?: "fused",
                     locationAgeMs = fixAgeMs,
+                    scanTimestampMicros = frameTimestamp,
                     observedAt = now,
                     sessionId = sessionId,
                 )
