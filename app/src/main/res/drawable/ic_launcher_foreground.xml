@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Radar sweep centred in the adaptive-icon safe zone (36..72). -->
+    <group android:translateX="0" android:translateY="6">
+        <path
+            android:fillColor="#7BF2DE"
+            android:pathData="M54,72m-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0" />
+        <path
+            android:fillColor="#9EB6FF"
+            android:pathData="M63.5,62.5 L60,59c-1.6,-1.6 -3.7,-2.4 -6,-2.4s-4.4,0.8 -6,2.4l-3.5,-3.5c2.5,-2.5 5.9,-3.9 9.5,-3.9S61,53 63.5,55.5z" />
+        <path
+            android:fillColor="#5C86FF"
+            android:pathData="M72,54 L68.5,50.5C64.6,46.6 59.5,44.5 54,44.5s-10.6,2.1 -14.5,6L36,47c4.8,-4.8 11.2,-7.5 18,-7.5S67.2,42.2 72,47z" />
+        <path
+            android:fillColor="#3D6BFF"
+            android:pathData="M80.5,45.5 L77,42C70.8,35.9 62.7,32.5 54,32.5S37.2,35.9 31,42l-3.5,-3.5C34.6,31.4 44,27.5 54,27.5S73.4,31.4 80.5,38.5z" />
+    </group>
+</vector>
